@@ -98,6 +98,20 @@ describe('dunk tank', () => {
     expect(state.dunkPhase).toBe('dropping');
   });
 
+  it('scores a swept hit when the target bounces during the frame', () => {
+    const state = createState();
+    state.target.x = 534.25;
+    state.target.speed = -170;
+    state.ball = { x: 494.06, y: 205.93, vx: 237.72, vy: -637.09 };
+    state.ballsLeft = BALLS_PER_ROUND - 1;
+
+    step(state, 0.05);
+
+    expect(state.score).toBe(1);
+    expect(state.ball).toBeNull();
+    expect(state.dunkPhase).toBe('dropping');
+  });
+
   it('scores nothing for a miss', () => {
     const state = createState();
     expect(throwBall(state, state.target.x, 0)).toBe(true);

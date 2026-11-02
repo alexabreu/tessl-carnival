@@ -11,6 +11,7 @@ export const TARGET_Y = 190;
 export const TARGET_MIN_X = WIDTH - 270;
 export const TARGET_MAX_X = WIDTH - 70;
 export const TARGET_SPEED = 170;
+const COLLISION_STEP = 1 / 240;
 
 const DUNK_DURATIONS = {
   dropping: 0.35,
@@ -171,23 +172,37 @@ function finishRoundIfReady(state: DunkTankState): void {
 export function step(state: DunkTankState, dt: number): void {
   if (state.phase === 'over') return;
 
-  const previousTarget = { ...state.target };
-  const previousBall = state.ball ? { ...state.ball } : null;
+  if (state.ball && isHit(state.ball, state.target)) {
+    state.score += 1;
+    state.ball = null;
+    startDunk(state);
+  } else if (state.ball && ballIsGone(state.ball)) {
+    state.ball = null;
+  }
 
-  moveTarget(state.target, dt);
+  let remaining = dt;
+  while (remaining > 0 && state.ball) {
+    const slice = Math.min(remaining, COLLISION_STEP);
+    const previousTarget = { ...state.target };
+    const previousBall = { ...state.ball };
 
-  if (state.ball && previousBall) {
-    state.ball.x += state.ball.vx * dt;
-    state.ball.y += state.ball.vy * dt;
+    moveTarget(state.target, slice);
+    state.ball.x += state.ball.vx * slice;
+    state.ball.y += state.ball.vy * slice;
 
     if (sweptHit(previousBall, state.ball, previousTarget, state.target)) {
       state.score += 1;
       state.ball = null;
       startDunk(state);
+      remaining = 0;
     } else if (ballIsGone(state.ball)) {
       state.ball = null;
     }
+
+    remaining -= slice;
   }
+
+  if (remaining > 0 && !state.ball && !isDunking(state)) moveTarget(state.target, remaining);
 
   if (isDunking(state)) advanceDunk(state, dt);
   finishRoundIfReady(state);
