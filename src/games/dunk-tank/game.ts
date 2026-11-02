@@ -237,57 +237,114 @@ function drawDunkTank(ctx: CanvasRenderingContext2D, state: DunkTankState) {
 
   if (state.dunkPhase === 'splash') {
     ctx.strokeStyle = colors.water;
-    ctx.lineWidth = 4;
-    for (let i = 0; i < 5; i++) {
+    ctx.lineWidth = 5;
+    for (let i = 0; i < 7; i++) {
       ctx.beginPath();
-      ctx.arc(tankX + 110 + i * 20, tankY + 65, 18 + progress * 34, 0, Math.PI);
+      ctx.arc(tankX + 55 + i * 32, tankY + 56, 26 + progress * 58, 0, Math.PI);
       ctx.stroke();
+    }
+
+    ctx.fillStyle = colors.water;
+    for (let i = 0; i < 18; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const sprayX = tankX + tankWidth / 2 + side * (35 + i * 8);
+      const sprayY = tankY + 42 - Math.sin(progress * Math.PI) * (28 + (i % 5) * 12);
+      ctx.beginPath();
+      ctx.arc(sprayX, sprayY, 4 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
   const personX = tankX + 150;
-  const personY = plankY - 38 + seatDrop;
+  const personY = plankY - 50 + seatDrop;
+  const dunking = state.dunkPhase !== 'idle';
 
-  // Cartoon dunkee: an oversized big baby in a bonnet and bib.
+  // Cartoon dunkee: an oversized adult in a baby costume.
+  ctx.fillStyle = colors.accent;
+  ctx.beginPath();
+  ctx.ellipse(personX, personY + 72, 46, 54, 0, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.fillStyle = colors.stripeB;
   ctx.beginPath();
-  ctx.arc(personX, personY - 8, 28, Math.PI, Math.PI * 2);
+  ctx.ellipse(personX, personY + 92, 42, 30, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillRect(personX - 28, personY - 8, 56, 16);
+  ctx.strokeStyle = colors.muted;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(personX - 34, personY + 84);
+  ctx.lineTo(personX + 34, personY + 84);
+  ctx.stroke();
+  ctx.fillStyle = colors.accent;
+  ctx.beginPath();
+  ctx.arc(personX + 22, personY + 92, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = colors.stripeB;
+  ctx.beginPath();
+  ctx.arc(personX, personY, 36, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(personX - 36, personY - 2, 72, 18);
+  ctx.strokeStyle = colors.muted;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(personX - 24, personY + 8);
+  ctx.quadraticCurveTo(personX, personY + 34, personX + 24, personY + 8);
+  ctx.stroke();
 
   ctx.fillStyle = colors.accent;
   ctx.beginPath();
-  ctx.arc(personX, personY, 24, 0, Math.PI * 2);
+  ctx.arc(personX, personY + 10, 30, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = colors.muted;
   ctx.beginPath();
-  ctx.arc(personX - 8, personY - 4, 3, 0, Math.PI * 2);
-  ctx.arc(personX + 8, personY - 4, 3, 0, Math.PI * 2);
+  ctx.arc(personX - 10, personY + 6, 3, 0, Math.PI * 2);
+  ctx.arc(personX + 10, personY + 6, 3, 0, Math.PI * 2);
   ctx.fill();
+
   ctx.strokeStyle = colors.danger;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(personX, personY + 8, 8, 0, Math.PI);
+  ctx.arc(personX, personY + 18, 8, 0, Math.PI);
   ctx.stroke();
+
+  if (!dunking) {
+    ctx.fillStyle = colors.stripeB;
+    ctx.fillRect(personX + 6, personY + 14, 34, 10);
+    ctx.fillStyle = colors.water;
+    ctx.fillRect(personX + 32, personY + 12, 12, 14);
+    ctx.fillStyle = colors.danger;
+    ctx.beginPath();
+    ctx.arc(personX + 4, personY + 19, 4, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    const fly =
+      state.dunkPhase === 'dropping'
+        ? progress
+        : state.dunkPhase === 'splash'
+          ? 1
+          : Math.max(0, 1 - progress * 0.7);
+    const bottleX = personX + 18 + fly * 92;
+    const bottleY = personY + 18 - Math.sin(fly * Math.PI) * 54 + fly * 18;
+    ctx.save();
+    ctx.translate(bottleX, bottleY);
+    ctx.rotate(-0.8 - fly * 1.2);
+    ctx.fillStyle = colors.stripeB;
+    ctx.fillRect(-16, -5, 32, 10);
+    ctx.fillStyle = colors.water;
+    ctx.fillRect(9, -7, 12, 14);
+    ctx.fillStyle = colors.danger;
+    ctx.beginPath();
+    ctx.arc(-18, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   ctx.fillStyle = colors.stripeA;
   ctx.beginPath();
-  ctx.ellipse(personX, personY + 48, 34, 42, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = colors.stripeB;
-  ctx.beginPath();
-  ctx.moveTo(personX - 24, personY + 24);
-  ctx.lineTo(personX + 24, personY + 24);
-  ctx.lineTo(personX, personY + 58);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = colors.accent;
-  ctx.beginPath();
-  ctx.arc(personX - 42, personY + 42, 11, 0, Math.PI * 2);
-  ctx.arc(personX + 42, personY + 42, 11, 0, Math.PI * 2);
+  ctx.arc(personX - 52, personY + 72, 13, 0, Math.PI * 2);
+  ctx.arc(personX + 52, personY + 72, 13, 0, Math.PI * 2);
   ctx.fill();
 }
 
