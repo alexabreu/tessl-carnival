@@ -172,10 +172,14 @@ function finishRoundIfReady(state: DunkTankState): void {
 export function step(state: DunkTankState, dt: number): void {
   if (state.phase === 'over') return;
 
+  const dunkWasRunning = isDunking(state);
+  let dunkDt = dunkWasRunning ? dt : 0;
+
   if (state.ball && isHit(state.ball, state.target)) {
     state.score += 1;
     state.ball = null;
     startDunk(state);
+    dunkDt = dt;
   } else if (state.ball && ballIsGone(state.ball)) {
     state.ball = null;
   }
@@ -190,21 +194,20 @@ export function step(state: DunkTankState, dt: number): void {
     state.ball.x += state.ball.vx * slice;
     state.ball.y += state.ball.vy * slice;
 
+    remaining -= slice;
     if (sweptHit(previousBall, state.ball, previousTarget, state.target)) {
       state.score += 1;
       state.ball = null;
       startDunk(state);
-      remaining = 0;
+      dunkDt = remaining;
     } else if (ballIsGone(state.ball)) {
       state.ball = null;
     }
-
-    remaining -= slice;
   }
 
   if (remaining > 0 && !state.ball && !isDunking(state)) moveTarget(state.target, remaining);
 
-  if (isDunking(state)) advanceDunk(state, dt);
+  if (isDunking(state) && dunkDt > 0) advanceDunk(state, dunkDt);
   finishRoundIfReady(state);
 }
 

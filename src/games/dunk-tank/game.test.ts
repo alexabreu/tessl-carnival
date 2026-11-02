@@ -141,6 +141,19 @@ describe('dunk tank', () => {
     expect(throwBall(state, state.target.x, 0)).toBe(true);
   });
 
+  it('does not advance a swept-hit dunk by time spent reaching the target', () => {
+    const state = createState();
+    state.target.x = 500;
+    state.target.speed = -170;
+    state.ball = { x: 450, y: state.target.y, vx: 2000, vy: 0 };
+    state.ballsLeft = BALLS_PER_ROUND - 1;
+
+    step(state, 0.35);
+
+    expect(state.score).toBe(1);
+    expect(state.dunkPhase).toBe('dropping');
+  });
+
   it('ends the round after exactly the third resolved baseball', () => {
     const state = resolveMisses();
     expect(state.ballsLeft).toBe(0);
