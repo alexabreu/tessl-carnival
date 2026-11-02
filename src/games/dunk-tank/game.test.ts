@@ -166,6 +166,46 @@ describe('dunk tank', () => {
     expect(state.ball).not.toBeNull();
   });
 
+  it('keeps active-ball target motion stable around both turnarounds', () => {
+    const edgeCases = [
+      { x: TARGET_MIN_X, speed: -170 },
+      { x: TARGET_MIN_X + 1e-9, speed: -170 },
+      { x: TARGET_MIN_X + 1e-7, speed: -170 },
+      { x: TARGET_MIN_X + 1e-5, speed: -170 },
+      { x: TARGET_MAX_X, speed: 170 },
+      { x: TARGET_MAX_X - 1e-9, speed: 170 },
+      { x: TARGET_MAX_X - 1e-7, speed: 170 },
+      { x: TARGET_MAX_X - 1e-5, speed: 170 },
+    ];
+
+    for (const edge of edgeCases) {
+      const state = createState();
+      state.target.x = edge.x;
+      state.target.speed = edge.speed;
+      state.ball = { x: 400, y: 300, vx: 0, vy: -BALL_RADIUS };
+      state.ballsLeft = BALLS_PER_ROUND - 1;
+
+      step(state, 0.05);
+
+      expect(state.target.x, `${edge.x}`).toBeGreaterThanOrEqual(TARGET_MIN_X);
+      expect(state.target.x, `${edge.x}`).toBeLessThanOrEqual(TARGET_MAX_X);
+      expect(Math.sign(state.target.speed), `${edge.x}`).toBe(edge.speed < 0 ? 1 : -1);
+      expect(state.phase).toBe('playing');
+    }
+  });
+
+  it('keeps the target in range through long idle simulations', () => {
+    const state = createState();
+    state.target.x = TARGET_MAX_X;
+    state.target.speed = 170;
+
+    for (const dt of [0, 0.05, 0.5, 1, 2, 5, 20]) {
+      step(state, dt);
+      expect(state.target.x, `${dt}`).toBeGreaterThanOrEqual(TARGET_MIN_X);
+      expect(state.target.x, `${dt}`).toBeLessThanOrEqual(TARGET_MAX_X);
+    }
+  });
+
   it('scores nothing for a miss', () => {
     const state = createState();
     expect(throwBall(state, state.target.x, 0)).toBe(true);
