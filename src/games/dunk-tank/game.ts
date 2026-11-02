@@ -118,16 +118,24 @@ export function throwBall(state: DunkTankState, aimX: number, aimY: number): boo
 }
 
 function moveTarget(target: Target, dt: number): void {
-  target.x += target.speed * dt;
+  const range = target.maxX - target.minX;
+  const period = range * 2;
+  const phase = target.speed >= 0 ? target.x - target.minX : range + target.maxX - target.x;
+  const next = (((phase + Math.abs(target.speed) * dt) % period) + period) % period;
 
-  if (target.x > target.maxX) {
-    target.x = target.maxX - (target.x - target.maxX);
+  if (next <= range) {
+    target.x = target.minX + next;
+    target.speed = Math.abs(target.speed);
+  } else {
+    target.x = target.maxX - (next - range);
     target.speed = -Math.abs(target.speed);
   }
-  if (target.x < target.minX) {
-    target.x = target.minX + (target.minX - target.x);
-    target.speed = Math.abs(target.speed);
-  }
+}
+
+function timeToTargetBoundary(target: Target): number {
+  if (target.speed > 0) return (target.maxX - target.x) / target.speed;
+  if (target.speed < 0) return (target.x - target.minX) / -target.speed;
+  return Number.POSITIVE_INFINITY;
 }
 
 function startDunk(state: DunkTankState): void {
@@ -186,7 +194,13 @@ export function step(state: DunkTankState, dt: number): void {
 
   let remaining = dt;
   while (remaining > 0 && state.ball) {
-    const slice = Math.min(remaining, COLLISION_STEP);
+    const boundary = timeToTargetBoundary(state.target);
+    if (boundary <= 1e-9) {
+      moveTarget(state.target, 0);
+      continue;
+    }
+
+    const slice = Math.min(remaining, COLLISION_STEP, boundary);
     const previousTarget = { ...state.target };
     const previousBall = { ...state.ball };
 

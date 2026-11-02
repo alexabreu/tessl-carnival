@@ -57,6 +57,18 @@ describe('dunk tank', () => {
     expect(state.target.speed).toBeLessThan(0);
   });
 
+  it('keeps the idle target inside its movement range after a large step', () => {
+    const state = createState();
+    state.target.x = 540;
+    state.target.speed = -170;
+
+    step(state, 2);
+
+    expect(state.target.x).toBeGreaterThanOrEqual(TARGET_MIN_X);
+    expect(state.target.x).toBeLessThanOrEqual(TARGET_MAX_X);
+    expect(state.target.x).toBeCloseTo(600);
+  });
+
   it('throws one baseball at a time and consumes one baseball', () => {
     const state = createState();
     expect(throwBall(state, 500, 100)).toBe(true);
@@ -106,6 +118,20 @@ describe('dunk tank', () => {
     state.ballsLeft = BALLS_PER_ROUND - 1;
 
     step(state, 0.05);
+
+    expect(state.score).toBe(1);
+    expect(state.ball).toBeNull();
+    expect(state.dunkPhase).toBe('dropping');
+  });
+
+  it('scores a hit that only exists at the target reversal', () => {
+    const state = createState();
+    state.target.x = TARGET_MIN_X + 170 / 480;
+    state.target.speed = -170;
+    state.ball = { x: 495.045, y: 182.5, vx: 2378.4, vy: 0 };
+    state.ballsLeft = BALLS_PER_ROUND - 1;
+
+    step(state, 1 / 240);
 
     expect(state.score).toBe(1);
     expect(state.ball).toBeNull();
