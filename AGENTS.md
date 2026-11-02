@@ -103,6 +103,8 @@ that `src/games/index.ts` finds.
 3. **Every game draws with the carnival's theme.** Colours, fonts and sizes come
    from `theme` and `canvasFont` in `src/carnival/theme.ts`. No hex colours or
    font strings inside a game.
+   Everything visual follows the sideshow look in
+   `skills/sideshow-look/SKILL.md`: odd and warm, a little creepy, never mean.
 4. **Game logic is testable without a browser.** Keep state changes (scoring,
    moving, hits) in plain exported functions, and test them in `game.test.ts`.
    Only `start` touches the canvas, the DOM or `requestAnimationFrame`.
@@ -135,6 +137,8 @@ You often work on an issue with nobody around to answer questions.
 ## Skills
 
 - `skills/add-carnival-game/SKILL.md`: how to add a new game to the midway.
+- `skills/sideshow-look/SKILL.md`: the carnival's look, a Coney Island
+  sideshow after dark, for the theme, the midway and every game.
 - `skills/set-up-your-fork/SKILL.md`: turn on Issues, Actions and GitHub Pages
   in a fork, lock it down, and deploy the carnival.
 - `skills/check-workshop-ready/SKILL.md`: check a laptop and fork are ready for
