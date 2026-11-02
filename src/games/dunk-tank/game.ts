@@ -12,6 +12,7 @@ export const TARGET_MIN_X = WIDTH - 270;
 export const TARGET_MAX_X = WIDTH - 70;
 export const TARGET_SPEED = 170;
 const COLLISION_STEP = 1 / 240;
+const TARGET_EDGE_EPSILON = 1e-6;
 
 const DUNK_DURATIONS = {
   dropping: 0.35,
@@ -132,6 +133,16 @@ function moveTarget(target: Target, dt: number): void {
   }
 }
 
+function turnInwardAtBoundary(target: Target): void {
+  if (target.speed < 0 && target.x <= target.minX + TARGET_EDGE_EPSILON) {
+    target.x = target.minX;
+    target.speed = Math.abs(target.speed);
+  } else if (target.speed > 0 && target.x >= target.maxX - TARGET_EDGE_EPSILON) {
+    target.x = target.maxX;
+    target.speed = -Math.abs(target.speed);
+  }
+}
+
 function timeToTargetBoundary(target: Target): number {
   if (target.speed > 0) return (target.maxX - target.x) / target.speed;
   if (target.speed < 0) return (target.x - target.minX) / -target.speed;
@@ -194,13 +205,8 @@ export function step(state: DunkTankState, dt: number): void {
 
   let remaining = dt;
   while (remaining > 0 && state.ball) {
-    const boundary = timeToTargetBoundary(state.target);
-    if (boundary <= 1e-9) {
-      moveTarget(state.target, 0);
-      continue;
-    }
-
-    const slice = Math.min(remaining, COLLISION_STEP, boundary);
+    turnInwardAtBoundary(state.target);
+    const slice = Math.min(remaining, COLLISION_STEP, timeToTargetBoundary(state.target));
     const previousTarget = { ...state.target };
     const previousBall = { ...state.ball };
 
