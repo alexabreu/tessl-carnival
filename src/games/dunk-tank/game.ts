@@ -79,6 +79,27 @@ export function isHit(ball: Ball, target: Target): boolean {
   return Math.hypot(ball.x - target.x, ball.y - target.y) <= target.radius + BALL_RADIUS;
 }
 
+function sweptHit(
+  previousBall: Ball,
+  nextBall: Ball,
+  previousTarget: Target,
+  nextTarget: Target,
+): boolean {
+  const radius = nextTarget.radius + BALL_RADIUS;
+  const startX = previousBall.x - previousTarget.x;
+  const startY = previousBall.y - previousTarget.y;
+  const moveX = nextBall.x - nextTarget.x - startX;
+  const moveY = nextBall.y - nextTarget.y - startY;
+  const lengthSquared = moveX * moveX + moveY * moveY;
+  const nearest =
+    lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, -(startX * moveX + startY * moveY) / lengthSquared));
+  const closestX = startX + moveX * nearest;
+  const closestY = startY + moveY * nearest;
+  return Math.hypot(closestX, closestY) <= radius;
+}
+
 export function throwBall(state: DunkTankState, aimX: number, aimY: number): boolean {
   if (!canThrow(state)) return false;
 
@@ -150,13 +171,16 @@ function finishRoundIfReady(state: DunkTankState): void {
 export function step(state: DunkTankState, dt: number): void {
   if (state.phase === 'over') return;
 
+  const previousTarget = { ...state.target };
+  const previousBall = state.ball ? { ...state.ball } : null;
+
   moveTarget(state.target, dt);
 
-  if (state.ball) {
+  if (state.ball && previousBall) {
     state.ball.x += state.ball.vx * dt;
     state.ball.y += state.ball.vy * dt;
 
-    if (isHit(state.ball, state.target)) {
+    if (sweptHit(previousBall, state.ball, previousTarget, state.target)) {
       state.score += 1;
       state.ball = null;
       startDunk(state);
@@ -222,13 +246,49 @@ function drawDunkTank(ctx: CanvasRenderingContext2D, state: DunkTankState) {
   }
 
   const personX = tankX + 150;
-  const personY = plankY - 30 + seatDrop;
+  const personY = plankY - 38 + seatDrop;
+
+  // Cartoon dunkee: an oversized big baby in a bonnet and bib.
+  ctx.fillStyle = colors.stripeB;
+  ctx.beginPath();
+  ctx.arc(personX, personY - 8, 28, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(personX - 28, personY - 8, 56, 16);
+
   ctx.fillStyle = colors.accent;
   ctx.beginPath();
-  ctx.arc(personX, personY, 16, 0, Math.PI * 2);
+  ctx.arc(personX, personY, 24, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.fillStyle = colors.muted;
+  ctx.beginPath();
+  ctx.arc(personX - 8, personY - 4, 3, 0, Math.PI * 2);
+  ctx.arc(personX + 8, personY - 4, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = colors.danger;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(personX, personY + 8, 8, 0, Math.PI);
+  ctx.stroke();
+
   ctx.fillStyle = colors.stripeA;
-  ctx.fillRect(personX - 16, personY + 16, 32, 38);
+  ctx.beginPath();
+  ctx.ellipse(personX, personY + 48, 34, 42, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = colors.stripeB;
+  ctx.beginPath();
+  ctx.moveTo(personX - 24, personY + 24);
+  ctx.lineTo(personX + 24, personY + 24);
+  ctx.lineTo(personX, personY + 58);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = colors.accent;
+  ctx.beginPath();
+  ctx.arc(personX - 42, personY + 42, 11, 0, Math.PI * 2);
+  ctx.arc(personX + 42, personY + 42, 11, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawTarget(ctx: CanvasRenderingContext2D, target: Target) {
