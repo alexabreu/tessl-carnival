@@ -1,0 +1,135 @@
+import { describe, expect, it } from 'vitest';
+import {
+  BALLS_PER_ROUND,
+  BALL_RADIUS,
+  TARGET_MAX_X,
+  TARGET_MIN_X,
+  TARGET_RADIUS,
+  createState,
+  isDunking,
+  isHit,
+  step,
+  throwBall,
+  type Ball,
+  type Target,
+} from './game';
+
+const target: Target = {
+  x: 500,
+  y: 190,
+  radius: TARGET_RADIUS,
+  speed: 170,
+  minX: TARGET_MIN_X,
+  maxX: TARGET_MAX_X,
+};
+
+function resolveMisses(state = createState()) {
+  for (let i = 0; i < BALLS_PER_ROUND; i++) {
+    expect(throwBall(state, state.target.x, 0)).toBe(true);
+    state.ball = { x: -BALL_RADIUS - 1, y: 100, vx: -1, vy: 0 };
+    step(state, 0);
+  }
+  return state;
+}
+
+describe('dunk tank', () => {
+  it('starts with three baseballs and no score', () => {
+    const state = createState();
+    expect(state.ballsLeft).toBe(BALLS_PER_ROUND);
+    expect(state.score).toBe(0);
+    expect(state.phase).toBe('playing');
+    expect(state.dunkPhase).toBe('idle');
+  });
+
+  it('moves the target over time', () => {
+    const state = createState();
+    const startX = state.target.x;
+    step(state, 0.25);
+    expect(state.target.x).toBeGreaterThan(startX);
+  });
+
+  it('bounces the target at the edge of its range', () => {
+    const state = createState();
+    state.target.x = state.target.maxX - 2;
+    state.target.speed = 170;
+    step(state, 0.1);
+    expect(state.target.x).toBeLessThanOrEqual(TARGET_MAX_X);
+    expect(state.target.speed).toBeLessThan(0);
+  });
+
+  it('throws one baseball at a time and consumes one baseball', () => {
+    const state = createState();
+    expect(throwBall(state, 500, 100)).toBe(true);
+    expect(state.ballsLeft).toBe(BALLS_PER_ROUND - 1);
+    expect(state.ball).not.toBeNull();
+    expect(throwBall(state, 500, 100)).toBe(false);
+    expect(state.ballsLeft).toBe(BALLS_PER_ROUND - 1);
+  });
+
+  it('detects hits and misses against the moving target', () => {
+    const hit: Ball = { x: target.x + target.radius, y: target.y, vx: 0, vy: 0 };
+    const miss: Ball = { x: target.x + target.radius + BALL_RADIUS + 1, y: target.y, vx: 0, vy: 0 };
+    expect(isHit(hit, target)).toBe(true);
+    expect(isHit(miss, target)).toBe(false);
+  });
+
+  it('scores a hit and starts the dunk animation', () => {
+    const state = createState();
+    state.ball = { x: state.target.x, y: state.target.y, vx: 0, vy: 0 };
+    state.ballsLeft = BALLS_PER_ROUND - 1;
+    step(state, 0);
+    expect(state.score).toBe(1);
+    expect(state.ball).toBeNull();
+    expect(state.dunkPhase).toBe('dropping');
+    expect(isDunking(state)).toBe(true);
+  });
+
+  it('scores nothing for a miss', () => {
+    const state = createState();
+    expect(throwBall(state, state.target.x, 0)).toBe(true);
+    state.ball = { x: -BALL_RADIUS - 1, y: 100, vx: -1, vy: 0 };
+    step(state, 0);
+    expect(state.score).toBe(0);
+    expect(state.ball).toBeNull();
+    expect(state.phase).toBe('playing');
+  });
+
+  it('pauses throwing during the dunk and allows it after the reset', () => {
+    const state = createState();
+    state.ball = { x: state.target.x, y: state.target.y, vx: 0, vy: 0 };
+    state.ballsLeft = BALLS_PER_ROUND - 1;
+    step(state, 0);
+
+    expect(throwBall(state, state.target.x, 0)).toBe(false);
+    expect(state.dunkPhase).toBe('dropping');
+
+    step(state, 0.36);
+    expect(state.dunkPhase).toBe('splash');
+    step(state, 0.31);
+    expect(state.dunkPhase).toBe('resetting');
+    step(state, 0.66);
+    expect(state.dunkPhase).toBe('idle');
+    expect(isDunking(state)).toBe(false);
+    expect(throwBall(state, state.target.x, 0)).toBe(true);
+  });
+
+  it('ends the round after exactly the third resolved baseball', () => {
+    const state = resolveMisses();
+    expect(state.ballsLeft).toBe(0);
+    expect(state.phase).toBe('over');
+    expect(throwBall(state, state.target.x, 0)).toBe(false);
+  });
+
+  it('waits for a third-hit dunk to finish before ending the round', () => {
+    const state = createState();
+    state.ballsLeft = 0;
+    state.ball = { x: state.target.x, y: state.target.y, vx: 0, vy: 0 };
+    step(state, 0);
+    expect(state.score).toBe(1);
+    expect(state.phase).toBe('playing');
+    expect(isDunking(state)).toBe(true);
+
+    step(state, 2);
+    expect(state.phase).toBe('over');
+  });
+});
