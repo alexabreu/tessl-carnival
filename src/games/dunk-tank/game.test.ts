@@ -138,6 +138,20 @@ describe('dunk tank', () => {
     expect(state.dunkPhase).toBe('dropping');
   });
 
+  it('turns inward at the right edge during an active throw', () => {
+    const state = createState();
+    state.target.x = TARGET_MAX_X;
+    state.target.speed = 170;
+    state.ball = { x: 400, y: 300, vx: 0, vy: -BALL_RADIUS };
+    state.ballsLeft = BALLS_PER_ROUND - 1;
+
+    step(state, 0.05);
+
+    expect(state.target.x).toBeLessThan(TARGET_MAX_X);
+    expect(state.target.speed).toBeLessThan(0);
+    expect(state.ball).not.toBeNull();
+  });
+
   it('scores nothing for a miss', () => {
     const state = createState();
     expect(throwBall(state, state.target.x, 0)).toBe(true);

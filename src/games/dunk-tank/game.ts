@@ -123,7 +123,7 @@ function moveTarget(target: Target, dt: number): void {
   const phase = target.speed >= 0 ? target.x - target.minX : range + target.maxX - target.x;
   const next = (((phase + Math.abs(target.speed) * dt) % period) + period) % period;
 
-  if (next <= range) {
+  if (next < range) {
     target.x = target.minX + next;
     target.speed = Math.abs(target.speed);
   } else {
